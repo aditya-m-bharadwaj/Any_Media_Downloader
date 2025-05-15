@@ -2,27 +2,53 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Onboarding</title>
+  <title>Onboarding – Download Any Media</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h2>Welcome to Download Any Media</h2>
-  <label>Default Quality:
+  <div class="banner">
+    <h1>Download Any Media</h1>
+    <button id="settings-btn" title="Settings" onclick="location.href='settings.html'">
+      <!-- gear icon SVG -->
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7zm7.43-2.5
+                 c.04.33.07.66.07 1s-.03.67-.07 1l2.11 1.65a.5.5 0 0 1 .11.64l-2
+                 3.46a.5.5 0 0 1-.61.22l-2.49-1a8.12 8.12 0 0 1-1.73 1l-.38
+                 2.65a.5.5 0 0 1-.5.42h-4a.5.5 0 0 1-.5-.42l-.38-2.65a8.12
+                 8.12 0 0 1-1.73-1l-2.49 1a.5.5 0 0 1-.61-.22l-2-3.46a.5.5
+                 0 0 1 .11-.64L4.57 14.5a8.5 8.5 0 0 1 0-2l-2.11-1.65a.5.5
+                 0 0 1-.11-.64l2-3.46a.5.5 0 0 1 .61-.22l2.49
+                 1a8.12 8.12 0 0 1 1.73-1l.38-2.65A.5.5 0 0 1
+                 9.5 4h4c.24 0 .44.17.5.42l.38 2.65a8.12 8.12 0 0 1
+                 1.73 1l2.49-1a.5.5 0 0 1 .61.22l2
+                 3.46a.5.5 0 0 1-.11.64L19.43 13z"/>
+      </svg>
+    </button>
+  </div>
+
+  <div id="page-title"><h2>Onboarding</h2></div>
+
+  <label>
+    Default Quality:
     <select id="default-quality">
       <option value="highest">Highest</option>
       <option value="medium">Medium</option>
       <option value="lowest">Lowest</option>
     </select>
   </label>
+
   <label>
     Show Metadata:
     <input type="checkbox" id="show-metadata" checked>
   </label>
+
   <label>
-    Session Duration (minutes):
+    Session Duration (min):
     <input type="number" id="session-duration" value="10" min="1" max="60">
   </label>
+
   <button id="save" class="button-primary">Save & Continue</button>
+
   <script src="onboarding.js"></script>
 </body>
 </html>
