@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Universal Media Grabber",
+  "version": "0.0.1",
+  "permissions": ["downloads","scripting","storage","webRequest","webRequestBlocking","<all_urls>"],
+  "background": {"service_worker": "background.js"},
+  "action": {"default_popup": "popup.html"},
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }],
+  "web_accessible_resources": [{
+    "resources": ["media_list.html","styles.css","media_list.js"],
+    "matches": ["<all_urls>"]
+  }]
+}
