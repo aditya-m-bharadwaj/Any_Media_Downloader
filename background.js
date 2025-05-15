@@ -4,98 +4,134 @@
 const cache = {};
 const MEDIA_MIME = ["image/", "video/"];
 
-// Helper to check if extension is enabled and session not expired
-define isEnabled = () => {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['enabled', 'expires', 'lastTab'], (res) => {
-      const { enabled, expires, lastTab } = res;
-      // Disable if expired or tab changed
+/**
+ * Checks if the extension session is enabled and unexpired.
+ * Auto-clears the flag if it’s expired.
+ * @returns {Promise<boolean>}
+ */
+function isEnabled() {
+  return new Promise(resolve => {
+    chrome.storage.local.get(["enabled", "expires"], ({ enabled, expires }) => {
       const now = Date.now();
-      if (!enabled || now > expires || lastTab !== currentTabId) {
-        chrome.storage.local.remove(['enabled', 'expires', 'lastTab']);
+      if (!enabled || !expires || now > expires) {
+        // Session expired or never enabled
+        chrome.storage.local.remove(["enabled", "expires"]);
         return resolve(false);
       }
       resolve(true);
     });
   });
-};
+}
 
-// Core scan logic
+/**
+ * Handles completed network requests, capturing any image/video URLs.
+ */
+function onRequest(details) {
+  const tabId = details.tabId;
+  if (tabId < 0) return;
+
+  const header = details.responseHeaders.find(
+    h => h.name.toLowerCase() === "content-type"
+  );
+  const contentType = header?.value || "";
+
+  if (MEDIA_MIME.some(mime => contentType.startsWith(mime))) {
+    cache[tabId] = cache[tabId] || [];
+    cache[tabId].push(details.url);
+  }
+}
+
+/**
+ * Orchestrates a media scan on the given tab:
+ * 1) Clears cache
+ * 2) Registers network listener
+ * 3) Reloads the page
+ * 4) Opens the media-list UI immediately
+ * 5) Injects the DOM crawler
+ * @param {chrome.tabs.Tab} tab
+ */
 async function startScan(tab) {
-  const enabled = await isEnabled();
-  if (!enabled) return;
-  const tid = tab.id;
-  // Initialize cache
-  cache[tid] = [];
-  // Register network listener
-  chrome.webRequest.onCompleted.addListener(onRequest, { urls: ["<all_urls>"] }, ["responseHeaders"]);
-  // Reload page to capture network events
-  chrome.tabs.reload(tid, () => {
-    // Inject DOM crawler after reload
+  if (!(await isEnabled())) {
+    return;
+  }
+
+  const tabId = tab.id;
+  cache[tabId] = [];
+
+  // 1) Listen for media network requests
+  chrome.webRequest.onCompleted.addListener(
+    onRequest,
+    { urls: ["<all_urls>"] },
+    ["responseHeaders"]
+  );
+
+  // 2) Reload the page to trigger fresh requests
+  chrome.tabs.reload(tabId, () => {
+    // 3) Open the media-list UI right away
+    chrome.tabs.create({
+      url: chrome.runtime.getURL(`media_list.html?tabId=${tabId}`)
+    });
+
+    // 4) Inject the DOM crawler to pick up inline media
     chrome.scripting.executeScript({
-      target: { tabId: tid },
-      func: () => chrome.runtime.sendMessage({ action: 'gatherMedia' })
+      target: { tabId },
+      func: () => chrome.runtime.sendMessage({ action: "gatherMedia" })
     });
   });
 }
 
-// Listen for toolbar icon clicks
-chrome.action.onClicked.addListener((tab) => {
-  startScan(tab);
-});
+// --------------------------------------------------------
+// Listeners
+// --------------------------------------------------------
 
-// Handle incoming messages
+// Toolbar icon click → start the scan
+chrome.action.onClicked.addListener(startScan);
+
+// Messages from popup/content scripts
 chrome.runtime.onMessage.addListener(async (msg, sender) => {
   const { action, urls } = msg;
-  const tid = sender.tab?.id;
-  if (!tid) return;
-  if (action === 'triggerScan') {
-    // From popup gather button
-    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-    startScan(tabs[0]);
+
+  if (action === "triggerScan") {
+    // Popup button clicked
+    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    return startScan(activeTab);
+  }
+
+  // Other actions require the session to be enabled
+  if (!(await isEnabled())) {
     return;
   }
-  if (action === 'mediaFound' || action === 'xhrMedia') {
-    if (!await isEnabled()) return;
-    cache[tid] = cache[tid] || [];
-    cache[tid].push(...urls);
-    if (!cache[tid].listOpened) {
-      cache[tid].listOpened = true;
-      chrome.tabs.create({ url: chrome.runtime.getURL(`media_list.html?tabId=${tid}`) });
-    }
+
+  const tabId = sender.tab?.id;
+  if (tabId === undefined) {
     return;
   }
-  if (action === 'download') {
+
+  if (action === "mediaFound" || action === "xhrMedia") {
+    // Accumulate discovered URLs
+    cache[tabId] = cache[tabId] || [];
+    cache[tabId].push(...urls);
+    return;
+  }
+
+  if (action === "download") {
+    // Trigger downloads
     for (const url of urls) {
-      chrome.downloads.download({ url, conflictAction: 'uniquify' });
+      chrome.downloads.download({ url, conflictAction: "uniquify" });
     }
     return;
   }
 });
 
-// Network request listener
-function onRequest(details) {
-  const tid = details.tabId;
-  if (tid < 0) return;
-  const header = details.responseHeaders.find(h => h.name.toLowerCase() === 'content-type');
-  const ct = header?.value || '';
-  if (MEDIA_MIME.some(m => ct.startsWith(m))) {
-    cache[tid] = cache[tid] || [];
-    cache[tid].push(details.url);
-  }
-}
-
-// React to enable flag changes to register/unregister webRequest listener
-gchrome.storage.onChanged.addListener((changes) => {
-  if (changes.enabled) {
+// Dynamically add/remove network listener when the enable flag changes
+chrome.storage.onChanged.addListener(changes => {
+  if ("enabled" in changes) {
     if (changes.enabled.newValue) {
-      // record the tab and expiration
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        const now = Date.now();
-        const expires = now + 10 * 60 * 1000;
-        chrome.storage.local.set({ lastTab: tabs[0].id, expires });
-      });
-      chrome.webRequest.onCompleted.addListener(onRequest, { urls: ["<all_urls>"] }, ["responseHeaders"]);
+      chrome.webRequest.onCompleted.addListener(
+        onRequest,
+        { urls: ["<all_urls>"] },
+        ["responseHeaders"]
+      );
     } else {
       chrome.webRequest.onCompleted.removeListener(onRequest);
     }
