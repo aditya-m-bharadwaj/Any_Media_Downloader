@@ -7,8 +7,9 @@
     "downloads",
     "storage",
     "scripting",
-    "webRequest",
-    "webRequestBlocking",
+    "webRequest"
+  ],
+  "host_permissions": [
     "<all_urls>"
   ],
   "background": {

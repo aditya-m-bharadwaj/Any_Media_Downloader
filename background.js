@@ -1,106 +1,112 @@
 // background.js
+
 const cache = {};
 const MEDIA_MIME = ["image/", "video/"];
 
-// Bootstrap defaults from settings.json if storage is empty
+// Bootstrap defaults
 async function bootstrapDefaults() {
-  const storage = await chrome.storage.local.get(['defaultQuality','showMetadata','sessionDuration']);
-  if (storage.defaultQuality === undefined) {
-    const response = await fetch(chrome.runtime.getURL('settings.json'));
-    const defaults = await response.json();
-    await chrome.storage.local.set(defaults);
+  const { defaultQuality } = await chrome.storage.local.get("defaultQuality");
+  if (defaultQuality === undefined) {
+    const resp = await fetch(chrome.runtime.getURL("settings.json"));
+    const defs = await resp.json();
+    await chrome.storage.local.set(defs);
   }
 }
 
-// Check if extension is enabled and session unexpired
+// Check on/off & timeout
 function isEnabled() {
   return new Promise(resolve => {
     chrome.storage.local.get(["enabled", "expires"], ({ enabled, expires }) => {
       const now = Date.now();
       if (!enabled || !expires || now > expires) {
         chrome.storage.local.remove(["enabled", "expires"]);
-        return resolve(false);
+        resolve(false);
+      } else {
+        resolve(true);
       }
-      resolve(true);
     });
   });
 }
 
-// Handle completed network requests
+// Capture network media
 function onRequest(details) {
-  const tabId = details.tabId;
-  if (tabId < 0) return;
+  const tid = details.tabId;
+  if (tid < 0) return;
   const header = details.responseHeaders.find(h => h.name.toLowerCase() === "content-type");
-  const contentType = header?.value || "";
-  if (MEDIA_MIME.some(mime => contentType.startsWith(mime))) {
-    cache[tabId] = cache[tabId] || [];
-    cache[tabId].push(details.url);
+  const ct = header?.value || "";
+  if (MEDIA_MIME.some(m => ct.startsWith(m))) {
+    cache[tid] = cache[tid] || [];
+    cache[tid].push(details.url);
   }
 }
 
-// Orchestrate a media scan on the given tab
+// Start a scan
 async function startScan(tab) {
   if (!(await isEnabled())) return;
-  const tabId = tab.id;
-  cache[tabId] = [];
-
-  chrome.webRequest.onCompleted.addListener(
-    onRequest,
-    { urls: ["<all_urls>"] },
-    ["responseHeaders"]
-  );
-
-  chrome.tabs.reload(tabId, () => {
-    chrome.tabs.create({
-      url: chrome.runtime.getURL(`found_media_list.html?tabId=${tabId}`)
-    });
+  const tid = tab.id;
+  cache[tid] = [];
+  chrome.webRequest.onCompleted.addListener(onRequest, { urls: ["<all_urls>"] }, ["responseHeaders"]);
+  chrome.tabs.reload(tid, () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL(`found_media_list.html?tabId=${tid}`) });
     chrome.scripting.executeScript({
-      target: { tabId },
-      func: () => chrome.runtime.sendMessage({ action: 'gatherMedia' })
+      target: { tabId: tid },
+      func: () => chrome.runtime.sendMessage({ action: "gatherMedia" })
     });
   });
 }
 
-// Toolbar icon click → start scan
+// Listen for toolbar click
 chrome.action.onClicked.addListener(startScan);
 
-// Handle messages from popup or content scripts
-chrome.runtime.onMessage.addListener(async (msg, sender) => {
-  const { action, urls } = msg;
-  if (action === 'triggerScan') {
+// Message handler
+chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
+  if (msg.action === "triggerScan") {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    return startScan(tab);
+    startScan(tab);
+    return;
+  }
+  if (msg.action === "getCache") {
+    // reply with cached URLs
+    const arr = cache[msg.tabId] || [];
+    sendResponse({ urls: arr });
+    return true; // keep channel open for sendResponse
   }
   if (!(await isEnabled())) return;
-  const tabId = sender.tab?.id;
-  if (action === 'mediaFound' || action === 'xhrMedia') {
-    cache[tabId] = cache[tabId] || [];
-    cache[tabId].push(...urls);
-    return;
+  const tid = sender.tab?.id;
+  if (msg.action === "mediaFound" || msg.action === "xhrMedia") {
+    cache[tid] = cache[tid] || [];
+    cache[tid].push(...msg.urls);
   }
-  if (action === 'download') {
-    for (const url of urls) {
-      chrome.downloads.download({ url, conflictAction: 'uniquify' });
-    }
-    return;
+  if (msg.action === "download") {
+    for (const u of msg.urls) chrome.downloads.download({ url: u, conflictAction: "uniquify" });
   }
 });
 
-// Re-register or remove network listener when enabled flag changes
+// React to enable flag changes
 chrome.storage.onChanged.addListener(changes => {
-  if ('enabled' in changes) {
+  if ("enabled" in changes) {
     if (changes.enabled.newValue) {
-      chrome.webRequest.onCompleted.addListener(
-        onRequest,
-        { urls: ["<all_urls>"] },
-        ["responseHeaders"]
-      );
+      chrome.webRequest.onCompleted.addListener(onRequest, { urls: ["<all_urls>"] }, ["responseHeaders"]);
     } else {
       chrome.webRequest.onCompleted.removeListener(onRequest);
     }
   }
 });
 
-// Initialize defaults on install and startup
+// Init
 chrome.runtime.onInstalled.addListener(bootstrapDefaults);
 bootstrapDefaults();
+chrome.runtime.onStartup.addListener(() => {
+  chrome.storage.local.get("enabled", ({ enabled }) => {
+    if (enabled) {
+      chrome.webRequest.onCompleted.addListener(onRequest, { urls: ["<all_urls>"] }, ["responseHeaders"]);
+    }
+  });
+});
+chrome.runtime.onSuspend.addListener(() => {
+  for (const tid in cache) {
+    if (cache[tid].length > 0) {
+      chrome.storage.local.set({ [tid]: cache[tid] });
+    }
+  }
+});
