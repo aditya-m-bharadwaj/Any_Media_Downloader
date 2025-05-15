@@ -1,7 +1,7 @@
 # Download Any Media
 
 **Version:** 0.0.1  
-**Author:** Aditya Bharadwaj - Internet Design Wizard  
+**Author:** Aditya Bharadwaj
 **Repository:** [https://github.com/aditya-idw/Any_Media_Downloader](https://github.com/aditya-idw/Any_Media_Downloader)
 
 ## Overview
