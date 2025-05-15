@@ -1,7 +1,9 @@
 # Download Any Media
 
-**Version:** 0.0.1  
+**Version:** 0.0.2 **[Alpha Version]**  
+
 **Author:** Aditya Bharadwaj
+
 **Repository:** [https://github.com/aditya-idw/Any_Media_Downloader](https://github.com/aditya-idw/Any_Media_Downloader)
 
 ## Overview
