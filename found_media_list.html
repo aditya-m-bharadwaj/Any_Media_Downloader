@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Found Media</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Found Media</h1>
+  <div class="controls">
+    <input id="search" placeholder="Search by name or tag...">
+    <select id="sort">
+      <option value="size_desc">Size ↓</option>
+      <option value="size_asc">Size ↑</option>
+      <option value="duration_desc">Duration ↓</option>
+      <option value="duration_asc">Duration ↑</option>
+      <option value="dim_desc">Dimensions ↓</option>
+      <option value="dim_asc">Dimensions ↑</option>
+    </select>
+  </div>
+  <div id="grid"></div>
+  <button id="download-all" class="button-primary">Download All Selected</button>
+  <script src="media_list.js"></script>
+</body>
+</html>

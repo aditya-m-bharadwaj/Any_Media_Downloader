@@ -1,17 +1,48 @@
 {
   "manifest_version": 3,
-  "name": "Universal Media Grabber",
+  "name": "Download Any Media",
   "version": "0.0.1",
-  "permissions": ["downloads","scripting","storage","webRequest","webRequestBlocking","<all_urls>"],
-  "background": {"service_worker": "background.js"},
-  "action": {"default_popup": "popup.html"},
-  "content_scripts": [{
-    "matches": ["<all_urls>"],
-    "js": ["content.js"],
-    "run_at": "document_idle"
-  }],
-  "web_accessible_resources": [{
-    "resources": ["media_list.html","styles.css","media_list.js"],
-    "matches": ["<all_urls>"]
-  }]
+  "description": "Discover and selectively download media from any website.",
+  "permissions": [
+    "downloads",
+    "storage",
+    "scripting",
+    "webRequest",
+    "webRequestBlocking",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "found_media_list.html",
+        "styles.css",
+        "media_list.js",
+        "settings.html",
+        "settings.js",
+        "onboarding.html",
+        "onboarding.js",
+        "LICENSE.md",
+        "README.md"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }

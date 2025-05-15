@@ -2,19 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Media Grabber</title>
-  <style>
-    body { font-family: sans-serif; padding: 1rem; width: 200px; }
-    button, a { display: block; width: 100%; margin: 0.5rem 0; padding: 0.5rem; text-align: center; }
-    #status { margin-bottom: 1rem; font-weight: bold; text-align: center; }
-  </style>
+  <title>Download Any Media</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="status">Loading…</div>
-  <button id="toggle-btn">Toggle Extension</button>
-  <div id="controls" style="display:none;">
-    <button id="gather-btn">Gather Media on Page</button>
-    <a href="settings.html" id="settings-link">Settings ⚙️</a>
+  <h1>Download Any Media</h1>
+  <div id="status"></div>
+  <button id="toggle-btn" class="button-primary"></button>
+  <div id="controls" style="display:none; margin-top:1rem;">
+    <button id="gather-btn" class="button-primary">Gather Media on Page</button>
+    <a href="onboarding.html" class="button-primary">Onboarding</a>
+    <a href="settings.html" class="button-primary">Settings</a>
   </div>
   <script src="popup.js"></script>
 </body>

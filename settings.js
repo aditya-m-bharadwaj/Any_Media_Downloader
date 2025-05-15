@@ -1,18 +1,22 @@
 // settings.js
 const qualityEl = document.getElementById('default-quality');
-const metaEl    = document.getElementById('show-metadata');
-const saveBtn   = document.getElementById('save');
+const metaEl = document.getElementById('show-metadata');
+const durationEl = document.getElementById('session-duration');
+const saveBtn = document.getElementById('save');
 
-// Load existing
-chrome.storage.local.get(['defaultQuality','showMeta'], prefs => {
-  if (prefs.defaultQuality) qualityEl.value = prefs.defaultQuality;
-  metaEl.checked = !!prefs.showMeta;
-});
+chrome.storage.local.get(
+  ['defaultQuality','showMetadata','sessionDuration'],
+  ({ defaultQuality, showMetadata, sessionDuration }) => {
+    if (defaultQuality) qualityEl.value = defaultQuality;
+    metaEl.checked = showMetadata;
+    if (sessionDuration) durationEl.value = sessionDuration;
+  }
+);
 
-// Save handler
 saveBtn.addEventListener('click', () => {
   chrome.storage.local.set({
     defaultQuality: qualityEl.value,
-    showMeta: metaEl.checked
+    showMetadata: metaEl.checked,
+    sessionDuration: parseInt(durationEl.value,10)
   }, () => window.close());
 });
