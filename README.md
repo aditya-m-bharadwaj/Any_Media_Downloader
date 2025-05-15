@@ -1,4 +1,4 @@
-# Download Any Media
+# **Download Any Media** Chrome Extension
 
 **Version:** 0.0.2 **[Alpha Version]**  
 
