@@ -4,7 +4,7 @@
 
 **Author:** Aditya Bharadwaj
 
-**Repository:** [https://github.com/aditya-idw/Any_Media_Downloader](https://github.com/aditya-idw/Any_Media_Downloader)
+**Repository:** [Github](https://github.com/aditya-m-bharadwaj//Any_Media_Downloader)
 
 ## Overview
 
