@@ -1,6 +1,6 @@
 # Download Any Media License (2025)
 
-**Copyright (c) 2025 Aditya Bharadwaj — Internet Design Wizard**
+**Copyright (c) 2025 Aditya Bharadwaj**
 
 This License governs the use, reproduction, modification, and distribution of the software and related documentation files (the “Software”). By exercising any rights granted under this License, you accept and agree to be bound by its terms.
 
